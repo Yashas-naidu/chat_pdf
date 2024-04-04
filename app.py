@@ -9,9 +9,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain.document_loaders import PyPDFLoader
 import os
 import tempfile
-
-
-
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 def initialize_session_state():
     if 'history' not in st.session_state:
@@ -51,16 +49,22 @@ def display_chat_history(chain):
                 message(st.session_state["generated"][i], key=str(i), avatar_style="fun-emoji")
 
 def create_conversational_chain(vector_store):
+    # Load Mistral-7B-Instruct-v0.2 model and tokenizer from Hugging Face Transformers
+    model_name = "mistralai/Mistral-7B-Instruct-v0.2"
+    model = AutoModelForCausalLM.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+
     # Create llm
     llm = LlamaCpp(
-    streaming = True,
-    model_path="mistral-7b-instruct-v0.1.Q4_K_M.gguf",
-    temperature=0.75,
-    top_p=1, 
-    verbose=True,
-    n_ctx=4096
-)
-    
+        streaming=True,
+        model=model,
+        tokenizer=tokenizer,
+        temperature=0.75,
+        top_p=1,
+        verbose=True,
+        n_ctx=4096
+    )
+
     memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
     chain = ConversationalRetrievalChain.from_llm(llm=llm, chain_type='stuff',
